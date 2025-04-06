@@ -18,58 +18,37 @@ public sealed class NrpnReceiver : MonoBehaviour
     void OnParamDataReceived(InputAction.CallbackContext ctx)
       => ProcessNrpnData(ctx.ReadValue<float>());
 
-    static readonly string[] SynthParamNames
+    static readonly string[] PartNames
+      = new[] { "Synth1", "Synth2", "Synth3", "Synth4",
+                "Close Hi-Hat", "Open Hi-Hat", "Crash", "H.Clap",
+                "Audio1", "Audio2" };
+
+    static readonly string[] PartParamNames
       = new[] { "Low Boost", "Pan", "Pitch", "Wave", "Mod Type", "Mod Speed",
                 "Mod Depth", "Level", "Decay", "Motion Seq Type" };
 
-    static readonly string[] PcmPartNames
-      = new[] { "Close Hi-Hat", "Open Hi-Hat", "Crash", "H.Clap" };
-
-    void ProcessSynthParam(int part, int kind, float data)
-      => Debug.Log($"Synth{part + 1} {SynthParamNames[kind]} : {data}");
-
-    void ProcessPcmParam(int part, int kind, float data)
-      => Debug.Log($"{PcmPartNames[part]} {SynthParamNames[kind]} : {data}");
-
-    void ProcessAudioInParam(int part, int kind, float data)
-      => Debug.Log($"Audio{part} {SynthParamNames[kind]} : {data}");
-
-    void ProcessMixerParam(int kind, float data)
-    {
-    }
+    static readonly string[] GlobalParamNames
+      = new[] { "Delay Depth", "Delay Time", "Cross (Synth1 & Synth2)",
+                "Ring (Synth4 & Audio In)", "Input Gain 1", "Input Gain 2",
+                "Accent Level", "Delay Type", "", "Mute 1", "Mute 2" };
 
     void ProcessNrpnData(float data)
     {
         if (_param.msb != 2) return;
 
         var lsb = _param.lsb;
-        Debug.Log($"{lsb:X}");
 
-        if (lsb < 4 * 10)
+        if (lsb < 100)
         {
-            ProcessSynthParam(lsb / 10, lsb % 10, data);
-            return;
+            var partName = PartNames[lsb / 10];
+            var paramName = PartParamNames[lsb % 10];
+            Debug.Log($"{partName} {paramName} : {data}");
         }
-
-        lsb -= 4 * 10;
-
-        if (lsb < 4 * 10)
+        else
         {
-            ProcessPcmParam(lsb / 10, lsb % 10, data);
-            return;
+            var paramName = GlobalParamNames[lsb - 100];
+            Debug.Log($"{paramName} : {data}");
         }
-
-        lsb -= 4 * 10;
-
-        if (lsb < 2 * 10)
-        {
-            ProcessAudioInParam(lsb / 10, lsb % 10, data);
-            return;
-        }
-
-        lsb -= 2 * 10;
-
-        ProcessMixerParam(lsb, data);
     }
 
     void Start()
